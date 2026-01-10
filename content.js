@@ -1,4 +1,4 @@
-console.log("Nuke My Data: HUNTER-KILLER V3.0 Loaded");
+console.log("Nuke My Data: HUNTER-KILLER V4.0 (AUTO-SEND ENABLED)");
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "start_nuke") {
@@ -11,66 +11,86 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 async function processQueue(queue) {
     for (const emailData of queue) {
         await sendSingleEmail(emailData);
-        await wait(2500); // 2.5s cooldown between emails
+        // Wait 3 seconds between emails to let Gmail breathe
+        await wait(3000);
     }
-    alert("SEQUENCE COMPLETE. CHECK 'SENT' FOLDER.");
+    alert("ALL TARGETS ELIMINATED. CHECK SENT FOLDER.");
 }
 
 async function sendSingleEmail(data) {
     return new Promise(async (resolve) => {
-        // --- STEP 1: FIND COMPOSE BUTTON ---
-        // We look for the button with the specific Google 'jscontroller' attribute or the text "Compose"
-        let composeBtn = document.querySelector('div[jscontroller][role="button"][gh="cm"]') ||
-            Array.from(document.querySelectorAll('div[role="button"]')).find(el => el.innerText === "Compose");
+        // --- STEP 1: OPEN COMPOSE ---
+        // Try multiple ways to find the Compose button
+        let composeBtn = document.querySelector('div[jscontroller][role="button"][gh="cm"]')
+            || Array.from(document.querySelectorAll('div[role="button"]')).find(el => el.innerText === "Compose");
 
         if (!composeBtn) {
             console.error("Critical: Compose button not found.");
-            // Try fallback for smaller screens
-            composeBtn = document.querySelector('.T-I.T-I-KE.L3');
-        }
-
-        if (!composeBtn) {
-            alert("ERROR: GMAIL LAYOUT UNKNOWN. RELOAD PAGE.");
             resolve(); return;
         }
 
         composeBtn.click();
 
-        // Wait for the popup to appear (dynamic wait)
+        // Wait for the popup to appear (Wait for the Subject line to exist)
         await waitForElement('input[name="subjectbox"]');
+        await wait(500); // Extra safety pause
 
-        // --- STEP 2: INJECT DATA ---
+        // --- STEP 2: FILL "TO" (RECIPIENT) - PRIORITY #1 ---
+        // We find the input, click it, clear it, and type.
+        const toInput = document.querySelector('input[peoplekit-id]') ||
+            document.querySelector('input[name="to"]') || // Common selector
+            document.querySelector('div[name="to"] input') || // Alternative
+            document.querySelector('input[aria-label="To recipients"]');
 
-        // Subject
+        if (toInput) {
+            toInput.click();
+            toInput.focus();
+            await wait(100);
+            document.execCommand('insertText', false, data.to);
+            await wait(200);
+            // Hit ENTER to turn the email into a "chip"
+            toInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+            await wait(200);
+        } else {
+            console.error("COULD NOT FIND 'TO' FIELD. SKIPPING.");
+        }
+
+        // --- STEP 3: FILL SUBJECT ---
         const subjectField = document.querySelector('input[name="subjectbox"]');
         if (subjectField) {
+            subjectField.click();
             subjectField.focus();
+            // Clear any accidental text first
+            document.execCommand('selectAll', false, null);
             document.execCommand('insertText', false, data.subject);
         }
 
-        // To (Recipients) - Tricky part
-        const toField = document.querySelector('input[peoplekit-id]') ||
-            document.querySelector('input[autocomplete="email"]');
-        if (toField) {
-            toField.focus();
-            document.execCommand('insertText', false, data.to);
-            await wait(200);
-            toField.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' })); // Lock in the email
-        }
-
-        // Body
+        // --- STEP 4: FILL BODY ---
         const bodyField = document.querySelector('div[aria-label="Message Body"]') ||
             document.querySelector('div[role="textbox"][contenteditable="true"]');
         if (bodyField) {
+            bodyField.click();
             bodyField.focus();
             document.execCommand('insertText', false, data.body);
         }
 
         console.log(`Payload injected for ${data.to}`);
+        await wait(1000); // Verify visual before sending
 
-        // Optional: Auto-Send
-        // const sendBtn = document.querySelector('div[role="button"][data-tooltip^="Send"]');
-        // if(sendBtn) sendBtn.click();
+        // --- STEP 5: CLICK SEND (LETHAL MODE) ---
+        // Find button with text "Send" (English) or "Envoyer" etc. 
+        // We use aria-label usually, or text content.
+        const sendBtn = document.querySelector('div[role="button"][aria-label*="Send"]'); // Matches "Send \u2318Enter"
+
+        if (sendBtn) {
+            sendBtn.click();
+            console.log("SENT COMMAND EXECUTED.");
+        } else {
+            // Fallback: Find by text
+            const allBtns = Array.from(document.querySelectorAll('div[role="button"]'));
+            const textSend = allBtns.find(b => b.innerText.trim() === "Send");
+            if (textSend) textSend.click();
+        }
 
         resolve();
     });
