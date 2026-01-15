@@ -31,13 +31,16 @@ The code is intentionally kept small and readable.
 ---
 
 ## 🗂 Project Structure
-├── manifest.json   # Chrome extension configuration
-├── popup.html      # Extension UI
-├── popup.js        # UI logic + Gemini API calls
-├── companies.js    # Static list of companies and emails
-├── content.js      # Gmail automation logic
-├── styles.css      # Cyber-style UI
 
+```text
+nuke-extension/
+│
+├── manifest.json      # Chrome extension configuration
+├── popup.html         # Extension UI
+├── popup.js           # UI logic + Gemini API calls
+├── companies.js       # Static list of companies and emails
+├── content.js         # Gmail automation logic
+└── styles.css         # Cyber-style UI
 ---
 
 ## ⚙️ How It Works (Simple Flow)
