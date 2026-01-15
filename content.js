@@ -1,4 +1,4 @@
-console.log("Nuke My Data: HUNTER-KILLER V4.0 (AUTO-SEND ENABLED)");
+console.log("Delete My Data: HUNTER-KILLER V4.0 (AUTO-SEND ENABLED)");
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "start_nuke") {
@@ -14,7 +14,7 @@ async function processQueue(queue) {
         // Wait 3 seconds between emails to let Gmail breathe
         await wait(3000);
     }
-    alert("ALL TARGETS ELIMINATED. CHECK SENT FOLDER.");
+    alert("ALL TARGETS ELIMINATED. CHECK 'SENT' FOLDER.");
 }
 
 async function sendSingleEmail(data) {

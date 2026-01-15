@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Nuke My Data",
+  "name": "Delete My Data",
   "version": "2.0",
   "description": "Auto-GDPR Nuker",
   "permissions": [
